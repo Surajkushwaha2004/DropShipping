@@ -57,8 +57,13 @@ app.post('/api/razorpay/order', async (req, res) => {
 // --- Serve frontend from /public ---
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ✅ Fallback: always send index.html for unknown routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // --- Start server ---
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
