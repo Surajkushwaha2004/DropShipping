@@ -1,0 +1,444 @@
+<!--
+Single-file Dropshipping Storefront Template (index.html)
+Save this file as `index.html` and open in a browser to preview.
+
+What this contains (all in one file):
+- Responsive, mobile-first storefront UI (hero, trust bar, product grid, product modal, cart sidebar, checkout page)
+- Simple cart persisted in localStorage
+- Sample product data (edit `productData` array near the top of the <script>)
+- Order simulation (stores placed orders in localStorage and offers CSV download for orders)
+- Clear comments showing where to customize images, text, pricing, and how to deploy
+
+How to customize quickly:
+1. Open this file in a text editor. Search for `productData` in the script section and replace product titles, prices, descriptions and image URLs.
+2. Replace the logo text (`YourStore`) in the header or paste a small SVG/logo image where indicated.
+3. Update contact details, shipping time and policy text in the footer.
+
+Quick deploy options:
+- Netlify: drag & drop this index.html onto the Netlify dashboard (or push to a Git repo and connect).
+- GitHub Pages: create a repository, push this index.html as the main branch, enable Pages.
+- Vercel: add a new project and import the repo or drag & drop.
+
+Payment & fulfillment notes:
+- This template is front-end only. For real payments (Razorpay, Stripe, PayPal) you'll need a lightweight serverless function to create secure payment orders and to keep API keys secret.
+- For manual order processing (dropshipping): when an order is placed, check the Orders CSV / localStorage and place orders with your supplier (AliExpress, Spocket, etc.).
+
+UI/UX notes included in the file: mobile-first layout, clear CTAs, trust signals, visual hierarchy, accessible buttons.
+
+Now save & preview. If you want, tell me your niche and I will pre-fill the product titles, descriptions, and image suggestions and update this file.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YourStore — Smart Dropshipping Store</title>
+  <meta name="description" content="Clean, fast dropshipping storefront template. Mobile-first, cart + checkout, easy to customize.">
+  <meta name="theme-color" content="#0b6efd">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#fafafa; --card:#ffffff; --muted:#6b7280; --accent:#0b6efd; --accent-2:#ff7a59; --success:#16a34a; --shadow: 0 6px 18px rgba(15,23,42,0.08);
+      --radius:14px; --max-width:1200px; --container-padding:20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0; background:var(--bg); color:#0f172a; -webkit-font-smoothing:antialiased;}
+    a{color:inherit; text-decoration:none}
+
+    .wrap{max-width:var(--max-width); margin:36px auto; padding:0 var(--container-padding)}
+
+    /* Header */
+    header{display:flex;align-items:center;justify-content:space-between; gap:12px; margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{font-weight:800; font-size:20px; color:var(--accent)}
+    .search{display:flex; align-items:center; gap:8px}
+    .search input{padding:10px 12px;border-radius:10px;border:1px solid #e6e9ee;background:#fff; min-width:220px}
+    .cart-btn{position:relative;background:transparent;border:0; cursor:pointer}
+    .cart-count{position:absolute; right:-6px; top:-6px; background:var(--accent-2); color:#fff; font-size:12px; padding:4px 6px; border-radius:999px}
+
+    /* Hero */
+    .hero{display:grid;grid-template-columns:1fr 420px; gap:18px; align-items:center; margin-bottom:18px}
+    .hero-card{background:linear-gradient(180deg, #ffffff, #fbfdff); padding:36px;border-radius:18px; box-shadow:var(--shadow)}
+    .hero h1{font-size:30px;margin:0 0 10px}
+    .hero p{margin:0 0 18px; color:var(--muted)}
+    .btn{display:inline-block;padding:12px 18px;border-radius:10px;background:var(--accent); color:#fff; font-weight:700; border:0; cursor:pointer}
+    .btn.alt{background:transparent;border:2px solid #e6e9ee;color:var(--accent)}
+
+    .trust{display:flex; gap:18px; margin-top:12px; color:var(--muted); font-size:14px}
+
+    /* Product grid */
+    .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:22px 0}
+    .card{background:var(--card); border-radius:14px; padding:12px; box-shadow:var(--shadow); display:flex; flex-direction:column}
+    .card img{width:100%; border-radius:10px; object-fit:cover; aspect-ratio:1/1}
+    .card h3{margin:10px 0 6px; font-size:16px}
+    .price-row{display:flex; align-items:center; justify-content:space-between}
+    .price{font-weight:700}
+    .muted{color:var(--muted); font-size:14px}
+
+    /* Cart sidebar */
+    .cart-drawer{position:fixed; right:20px; top:80px; width:360px; max-width:90%; background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:14px; transform:translateX(120%); transition:transform .28s ease; z-index:120}
+    .cart-drawer.open{transform:translateX(0)}
+    .cart-item{display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid #f2f4f7}
+    .cart-item img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+    .qty{display:flex; align-items:center; gap:6px}
+    .qty button{width:28px;height:28px;border-radius:8px;border:1px solid #e6e9ee;background:transparent}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,0.5); padding:18px; z-index:200; opacity:0; pointer-events:none; transition:opacity .18s}
+    .modal.open{opacity:1; pointer-events:auto}
+    .modal-card{background:var(--card); width:900px; max-width:98%; border-radius:12px; padding:18px; display:grid; grid-template-columns:1fr 360px; gap:16px}
+
+    /* Checkout page */
+    .checkout{display:grid; grid-template-columns:1fr 360px; gap:18px}
+    .field{margin-bottom:12px}
+    input,textarea,select{width:100%; padding:12px;border-radius:10px;border:1px solid #e6e9ee}
+
+    footer{margin:36px 0 80px; color:var(--muted); font-size:14px}
+
+    /* Responsive */
+    @media (max-width:980px){
+      .hero{grid-template-columns:1fr}
+      .grid{grid-template-columns:repeat(2,1fr)}
+      .modal-card{grid-template-columns:1fr}
+      .checkout{grid-template-columns:1fr}
+    }
+    @media (max-width:620px){
+      .grid{grid-template-columns:1fr}
+      .search input{min-width:0}
+      header{gap:8px}
+      .hero h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">Suraj Ki Dukan</div>
+        <div class="muted">Smart gadgets & trending essentials</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="search" role="search">
+          <input id="searchInput" placeholder="Search products, e.g. " />
+        </div>
+        <button class="cart-btn" id="openCartBtn" aria-label="Open cart">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke="#0f172a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card">
+        <h1>Shop practical gadgets that make life easier</h1>
+        <p class="muted">Fast-loading store template for dropshipping — mobile-first, conversion-focused, and easy to customize.</p>
+        <div style="display:flex;gap:12px">
+          <button class="btn" id="shopNowBtn">Shop Bestsellers</button>
+          <button class="btn alt" id="viewHowBtn">How it works</button>
+        </div>
+        <div class="trust">
+          <div>🚚 Free tracked shipping</div>
+          <div>🔁 30-day returns</div>
+          <div>🛡️ Secure checkout</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="background:linear-gradient(90deg,#fff,#fbfdff); padding:18px; border-radius:12px; box-shadow:var(--shadow)">
+          <strong>Limited time:</strong>
+          <div class="muted">Extra 10% off first order — use WELCOME10</div>
+        </div>
+        <div style="background:linear-gradient(90deg,#fff,#fbfdff); padding:18px; border-radius:12px; box-shadow:var(--shadow)">
+          <strong>Why our customers love us</strong>
+          <div class="muted">Fast support • Verified suppliers • Hand-picked items</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 style="margin:0 0 6px">Bestsellers</h2>
+      <div class="muted">Top-rated items — curated for high conversions</div>
+      <div class="grid" id="productsGrid"></div>
+    </section>
+
+    <footer>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap">
+        <div style="max-width:520px">
+          <h3>YourStore</h3>
+          <div class="muted">Shipping: 10–25 business days (tracked). For faster delivery consider express suppliers via Spocket.</div>
+        </div>
+        <div>
+          <div><strong>Contact</strong></div>
+          <div class="muted">support@yourstore.example</div>
+        </div>
+        <div>
+          <div><strong>Legal</strong></div>
+          <div class="muted">Shipping • Returns • Privacy</div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Cart Drawer -->
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <strong>Cart</strong>
+      <button id="closeCartBtn" style="background:transparent;border:0;cursor:pointer">✕</button>
+    </div>
+    <div id="cartItems"></div>
+    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+      <div class="muted">Subtotal</div>
+      <div id="cartSubtotal" style="font-weight:700">₹0</div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn" id="checkoutBtn">Checkout</button>
+      <button class="btn alt" id="continueShopping">Continue</button>
+    </div>
+  </aside>
+
+  <!-- Product Modal -->
+  <div class="modal" id="productModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div id="modalImages"></div>
+      <div>
+        <h3 id="modalTitle">Product title</h3>
+        <div id="modalPrice" style="font-weight:700; margin-bottom:8px">₹0</div>
+        <div id="modalDesc" class="muted" style="margin-bottom:12px">Short description</div>
+        <div style="margin-bottom:12px">
+          <label>Quantity</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <button id="decQty">-</button>
+            <input id="modalQty" value="1" style="width:54px;text-align:center;padding:8px;border-radius:8px;border:1px solid #e6e9ee" />
+            <button id="incQty">+</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="addToCartModal">Add to cart</button>
+          <button class="btn alt" id="buyNowModal">Buy now</button>
+        </div>
+      </div>
+      <button id="closeModal" style="position:absolute;right:18px;top:12px;background:transparent;border:0;font-size:18px">✕</button>
+    </div>
+  </div>
+
+  <!-- Checkout view (displayed on same page) -->
+  <div id="checkoutView" style="display:none;padding:20px;max-width:1000px;margin:18px auto;background:var(--card);border-radius:12px;box-shadow:var(--shadow)">
+    <h2>Checkout</h2>
+    <div class="checkout">
+      <div>
+        <div class="field">
+          <label>Full name</label>
+          <input id="shipName" placeholder="Your full name" />
+        </div>
+        <div class="field">
+          <label>Address</label>
+          <textarea id="shipAddress" rows="3" placeholder="Street, area, city, postcode"></textarea>
+        </div>
+        <div class="field">
+          <label>Phone / WhatsApp</label>
+          <input id="shipPhone" placeholder="+91 98765 43210" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="shipEmail" placeholder="you@example.com" />
+        </div>
+      </div>
+      <aside style="background:#fbfcff;padding:12px;border-radius:10px">
+        <div style="display:flex;justify-content:space-between"><div class="muted">Items</div><div id="checkoutItemsCount">0</div></div>
+        <div id="checkoutSummary" style="margin-top:10px"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><div class="muted">Subtotal</div><div id="checkoutSubtotal">₹0</div></div>
+        <div style="margin-top:12px">
+          <button class="btn" id="placeOrderBtn">Place order (simulate)</button>
+          <div class="muted" style="margin-top:8px;font-size:13px">Note: This demo does not process live payments. Use this to capture orders and fulfill manually with your supplier.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+ <script>
+  /* ---------------------- Product data (EDIT THIS) ---------------------- */
+  const CURRENCY = '₹';
+  const productData = [
+    {id:1, name:'Magnetic Cable Organizer', price:699, img:'https://via.placeholder.com/800?text=Magnetic+Cable', desc:'Tidy charging cables & earbuds. Portable and strong magnet.'},
+    {id:2, name:'Portable USB Blender', price:1799, img:'https://via.placeholder.com/800?text=Portable+Blender', desc:'Blend on-the-go — powerful, rechargeable and easy to clean.'},
+    {id:3, name:'Mini LED Projector', price:4999, img:'https://via.placeholder.com/800?text=Mini+Projector', desc:'Pocket-sized projector with 1080p support and built-in speaker.'},
+    {id:4, name:'Travel Tech Pouch', price:899, img:'https://via.placeholder.com/800?text=Travel+Pouch', desc:'Organize chargers, cables and adapters in one travel pouch.'},
+    {id:5, name:'Posture Corrector', price:1299, img:'https://via.placeholder.com/800?text=Posture+Corrector', desc:'Comfortable posture corrector to reduce back pain during work.'},
+  ];
+
+  /* ---------------------- Utility + Cart state ---------------------- */
+  let CART = JSON.parse(localStorage.getItem('cart_v1')||'[]');
+  const $ = (id)=>document.getElementById(id);
+
+  function saveCart(){ localStorage.setItem('cart_v1', JSON.stringify(CART)); renderCart(); }
+  function formatPrice(n){ return CURRENCY + n.toLocaleString(); }
+  function findProduct(id){ return productData.find(p=>p.id===id); }
+
+  /* ---------------------- Render products ---------------------- */
+  function renderProducts(list=productData){
+    const grid = $('productsGrid'); grid.innerHTML='';
+    list.forEach(p=>{
+      const card = document.createElement('div'); card.className='card';
+      card.innerHTML = `
+        <img src="${p.img}" alt="${p.name}">
+        <h3>${p.name}</h3>
+        <div class="price-row">
+          <div>
+            <div class="price">${formatPrice(p.price)}</div>
+            <div class="muted">Ships 10–25 days</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn" data-id=${p.id}>Add</button>
+            <button class="btn alt" data-view=${p.id}>View</button>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    });
+    grid.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',e=>{ addToCart(parseInt(e.currentTarget.dataset.id)); }));
+    grid.querySelectorAll('button[data-view]').forEach(b=>b.addEventListener('click',e=>{ openProductModal(parseInt(e.currentTarget.dataset.view)); }));
+  }
+
+  /* ---------------------- Cart functions ---------------------- */
+  function addToCart(id, qty=1){
+    const existing = CART.find(i=>i.id===id);
+    if(existing){ existing.qty += qty; }
+    else{ CART.push({id, qty}); }
+    saveCart(); animateCartCount();
+  }
+  function updateQty(id,newQty){
+    CART = CART.map(i=> i.id===id ? {...i, qty:newQty} : i).filter(i=>i.qty>0);
+    saveCart();
+  }
+  function removeItem(id){ CART = CART.filter(i=>i.id!==id); saveCart(); }
+  function cartSubtotal(){ return CART.reduce((s,i)=> s + (findProduct(i.id).price * i.qty), 0); }
+
+  function renderCart(){
+    const container = $('cartItems'); container.innerHTML='';
+    if(CART.length===0){ container.innerHTML='<div class="muted">Your cart is empty</div>'; }
+    CART.forEach(it=>{
+      const p = findProduct(it.id);
+      const row = document.createElement('div'); row.className='cart-item';
+      row.innerHTML = `
+        <img src="${p.img}" alt="${p.name}">
+        <div style="flex:1">
+          <div style="font-weight:700">${p.name}</div>
+          <div class="muted">${formatPrice(p.price)} × ${it.qty}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div class="qty">
+            <button data-dec=${p.id}>-</button>
+            <div style="padding:6px 8px;border-radius:8px;border:1px solid #f0f2f4">${it.qty}</div>
+            <button data-inc=${p.id}>+</button>
+          </div>
+          <button data-rem=${p.id} style="background:transparent;border:0;color:#ff5a5f">Remove</button>
+        </div>`;
+      container.appendChild(row);
+    });
+    $('cartSubtotal').innerText = formatPrice(cartSubtotal());
+    $('cartCount').innerText = CART.reduce((s,i)=>s+i.qty,0);
+    $('checkoutItemsCount').innerText = CART.reduce((s,i)=>s+i.qty,0);
+    renderCheckoutSummary();
+
+    container.querySelectorAll('[data-inc]').forEach(b=>b.addEventListener('click',e=>{ const id=parseInt(e.currentTarget.dataset.inc); const it=CART.find(x=>x.id===id); updateQty(id, it.qty+1); }));
+    container.querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click',e=>{ const id=parseInt(e.currentTarget.dataset.dec); const it=CART.find(x=>x.id===id); updateQty(id, Math.max(1,it.qty-1)); }));
+    container.querySelectorAll('[data-rem]').forEach(b=>b.addEventListener('click',e=>{ const id=parseInt(e.currentTarget.dataset.rem); removeItem(id); }));
+  }
+
+  function animateCartCount(){ const el = $('cartCount'); el.animate([{transform:'scale(1.2)'},{transform:'scale(1)'}],{duration:220}); }
+
+  /* ---------------------- Product modal ---------------------- */
+  let currentModalProduct = null;
+  function openProductModal(id){ const p = findProduct(id); currentModalProduct = p; $('modalTitle').innerText = p.name; $('modalPrice').innerText = formatPrice(p.price); $('modalDesc').innerText = p.desc; $('modalImages').innerHTML = `<img src="${p.img}" alt="${p.name}" style="width:100%;border-radius:8px;">`; $('productModal').classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeProductModal(){ $('productModal').classList.remove('open'); document.body.style.overflow='auto'; }
+
+  /* ---------------------- Checkout rendering ---------------------- */
+  function renderCheckoutSummary(){
+    const el = $('checkoutSummary'); el.innerHTML='';
+    CART.forEach(it=>{
+      const p=findProduct(it.id);
+      const div = document.createElement('div');
+      div.style.display='flex'; div.style.justifyContent='space-between'; div.style.marginBottom='6px';
+      div.innerHTML = `<div>${p.name} × ${it.qty}</div><div>${formatPrice(p.price*it.qty)}</div>`;
+      el.appendChild(div);
+    });
+    $('checkoutSubtotal').innerText = formatPrice(cartSubtotal());
+  }
+
+  /* ---------------------- Checkout + Orders ---------------------- */
+  function showCart(){ $('cartDrawer').classList.add('open'); $('cartDrawer').setAttribute('aria-hidden','false'); }
+  function hideCart(){ $('cartDrawer').classList.remove('open'); $('cartDrawer').setAttribute('aria-hidden','true'); }
+
+  function showCheckout(){
+    if(CART.length===0){ alert('Your cart is empty'); return; }
+    document.querySelector('.wrap').style.filter='blur(2px)';
+    $('checkoutView').style.display='block'; window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function hideCheckout(){ document.querySelector('.wrap').style.filter='none'; $('checkoutView').style.display='none'; }
+
+  // 🔥 New: send order to backend
+  async function placeOrder(){
+    const name = $('shipName').value.trim();
+    const addr = $('shipAddress').value.trim();
+    const phone = $('shipPhone').value.trim();
+    const email = $('shipEmail').value.trim();
+
+    if(!name||!addr||!phone){
+      alert('Please fill name, address and phone');
+      return;
+    }
+
+    const order = {
+      id:'ORD'+Date.now(),
+      name, addr, phone, email,
+      items: JSON.parse(JSON.stringify(CART)),
+      subtotal: cartSubtotal(),
+      created:new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      });
+      if(!res.ok) throw new Error('Failed to save order');
+      await res.json();
+
+      CART = []; saveCart(); hideCheckout();
+      alert('✅ Order placed successfully!');
+    } catch(err){
+      console.error(err);
+      alert('❌ Something went wrong. Please try again.');
+    }
+  }
+
+  /* ---------------------- Search + UI wiring ---------------------- */
+  document.addEventListener('DOMContentLoaded',()=>{
+    renderProducts(); renderCart();
+    $('openCartBtn').addEventListener('click',showCart);
+    $('closeCartBtn').addEventListener('click',hideCart);
+    $('continueShopping').addEventListener('click',hideCart);
+    $('shopNowBtn').addEventListener('click',()=>{ window.scrollTo({top:document.querySelector('#productsGrid').offsetTop-60,behavior:'smooth'}) });
+    $('viewHowBtn').addEventListener('click', ()=>{ alert('How it works:\n1) Customer orders\n2) You place order with supplier\n3) Supplier ships\n4) You update customer') });
+
+    // modal wiring
+    $('closeModal').addEventListener('click', closeProductModal);
+    $('productModal').addEventListener('click', (e)=>{ if(e.target===$('productModal')) closeProductModal(); });
+    $('addToCartModal').addEventListener('click', ()=>{ if(!currentModalProduct) return; const q = parseInt($('modalQty').value||1); addToCart(currentModalProduct.id,q); closeProductModal(); });
+    $('buyNowModal').addEventListener('click', ()=>{ if(!currentModalProduct) return; addToCart(currentModalProduct.id, parseInt($('modalQty').value||1)); hideCart(); showCheckout(); closeProductModal(); });
+    $('incQty').addEventListener('click', ()=>{ $('modalQty').value = Math.max(1, parseInt($('modalQty').value||1)+1); });
+    $('decQty').addEventListener('click', ()=>{ $('modalQty').value = Math.max(1, parseInt($('modalQty').value||1)-1); });
+
+    $('checkoutBtn').addEventListener('click', ()=>{ hideCart(); showCheckout(); });
+    $('placeOrderBtn').addEventListener('click', placeOrder);
+
+    $('searchInput').addEventListener('input', (e)=>{ const q = e.target.value.trim().toLowerCase(); if(!q) return renderProducts(); renderProducts(productData.filter(p=> p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))); });
+  });
+</script>
+
+
+</body>
+</html>
